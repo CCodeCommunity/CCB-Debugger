@@ -1,0 +1,58 @@
+const { remote } = require("electron");
+const { dialog } = remote;
+const fs = require("fs");
+
+const editor = document.getElementById("text-area");
+const lineNumbers = document.getElementById("line-numbers");
+const saveButton = document.getElementById("save");
+const infoRight = document.getElementById("info-right");
+
+let cursorColumn = 0;
+let cursorLine = 0;
+
+editor.onscroll = () => {lineNumbers.scrollTop = editor.scrollTop};
+
+infoRight.innerHTML = "ln 0, col 0" 
+
+saveButton.onclick = () => {
+    const path = dialog.showOpenDialogSync();
+    const buffer = fs.readFileSync(path[0]);
+    editor.innerText = buffer.toString();
+    reCalculateLineNumbers();
+};
+
+const typeable = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ ,0123456789\"".split("")
+typeable.push("Enter")
+typeable.push("Tab")
+
+editor.onkeyup = e => {
+    cursorColumn = window.getSelection().anchorOffset;
+    cursorLine = (window.getSelection().anchorNode.parentElement.parentElement.tagName == "BODY" ? -1 : window.getSelection().anchorNode.parentElement.parentElement.parentElement.tagName == "BODY" ? 0 : [...window.getSelection().anchorNode.parentElement.parentElement.children].indexOf(window.getSelection().anchorNode.parentElement) + 1) + (cursorColumn == 0);
+
+    infoRight.innerHTML = `ln ${cursorLine}, col ${cursorColumn}`;
+
+    if (e.key == "Enter" || e.key == "Backspace") {
+        reCalculateLineNumbers();
+    }
+
+    syntaxHighlight();
+};
+
+const reCalculateLineNumbers = () => {
+    const count = editor.innerText.replace(/\n\n/g, '\n').split("\n").length;
+    lineNumbers.innerText = "";
+
+    for (let i = 0; i < count; i++) {
+        lineNumbers.innerText += (i + 1) + '\n';
+    }
+};
+
+let theme = {
+    opcodes: "color: #ee0000; font-weight: bold;"
+};
+
+const opcodes = ["stp", "mov", "ret", "cal", "add", "sub", "div", "mul", "and", "or", "not", "xor", "jmp", "syscall"]
+
+const syntaxHighlight = () => {
+
+};
