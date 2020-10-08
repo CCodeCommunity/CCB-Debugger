@@ -3,16 +3,19 @@ const { dialog } = remote;
 const fs = require("fs");
 
 const editor = document.getElementById("text-area");
+const textRenderTarget = document.getElementById("txt-col");
 const lineNumbers = document.getElementById("line-numbers");
 const saveButton = document.getElementById("save");
 const infoRight = document.getElementById("info-right");
+
+const renderMinimap = require("./js/minimap.js");
 
 let cursorColumn = 0;
 let cursorLine = 0;
 
 editor.onscroll = () => {lineNumbers.scrollTop = editor.scrollTop};
 
-infoRight.innerHTML = "ln 0, col 0" 
+infoRight.innerHTML = "ln 0, col 0"
 
 saveButton.onclick = () => {
     const path = dialog.showOpenDialogSync();
@@ -35,7 +38,11 @@ editor.onkeyup = e => {
         reCalculateLineNumbers();
     }
 
-    syntaxHighlight();
+    //if (e.key == "Enter" || e.key == "Backspace" || e.key == " ") {
+        syntaxHighlight();
+    //}
+
+    renderMinimap();
 };
 
 const reCalculateLineNumbers = () => {
@@ -54,5 +61,20 @@ let theme = {
 const opcodes = ["stp", "mov", "ret", "cal", "add", "sub", "div", "mul", "and", "or", "not", "xor", "jmp", "syscall"]
 
 const syntaxHighlight = () => {
+    console.log("UPDATE")
+    const text = editor.innerText;
+    let newText = "";
+    text.split("\n").forEach(line => {
+        line.split(" ").forEach(word => {
+            if (opcodes.includes(word.trim())) {
+                newText += `<span style="${theme.opcodes}">${word}</span> `;
+            } else {
+                newText += word + " ";
+            }
+        });
 
+        newText += "<br />"
+    });
+    
+    textRenderTarget.innerHTML = newText;
 };
