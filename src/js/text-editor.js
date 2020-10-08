@@ -38,10 +38,8 @@ editor.onkeyup = e => {
         reCalculateLineNumbers();
     }
 
-    //if (e.key == "Enter" || e.key == "Backspace" || e.key == " ") {
-        syntaxHighlight();
-    //}
-
+    syntaxHighlight();
+    
     renderMinimap();
 };
 
@@ -55,7 +53,11 @@ const reCalculateLineNumbers = () => {
 };
 
 let theme = {
-    opcodes: "color: #ee0000; font-weight: bold;"
+    opcodes: "color: red; font-weight: bold;",
+    registers: "color: orange; font-weight: bold;",
+    number: "color: yellow",
+    label: "color: green",
+    comment: "color: #707070"
 };
 
 const opcodes = ["stp", "mov", "ret", "cal", "add", "sub", "div", "mul", "and", "or", "not", "xor", "jmp", "syscall"]
@@ -65,16 +67,63 @@ const syntaxHighlight = () => {
     const text = editor.innerText;
     let newText = "";
     text.split("\n").forEach(line => {
+        let comment = false;
         line.split(" ").forEach(word => {
-            if (opcodes.includes(word.trim())) {
-                newText += `<span style="${theme.opcodes}">${word}</span> `;
-            } else {
-                newText += word + " ";
-            }
+            const res = highlightTerm(newText, word.trim(), comment);
+            newText = res[0];
+            comment = res[1];
         });
 
         newText += "<br />"
     });
     
     textRenderTarget.innerHTML = newText;
+};
+
+const highlightTerm = (newText, word, comment) => {
+    // comments
+    if (comment) {
+        newText += `<span style="${theme.comment}">${word}</span> `;
+    }
+
+    else if (!(word.split(";").length == 1)) {
+        comment = true;
+        newText += `<span style="${theme.comment}">`;
+        
+        if (word[0] == ';')
+            newText += `${word} `;
+        else {
+            const wordPieces = word.split(";");
+            let res = highlightTerm(newText, wordPieces[0], false);
+            newText = res[0].slice(0, -1);
+            newText += `<span style="${theme.comment}">;${wordPieces[1]}</span>`;
+        }
+    }
+
+    // opcodes
+    else if (opcodes.includes(word.trim())) {
+        newText += `<span style="${theme.opcodes}">${word} </span> `;
+    }
+    
+    // registers
+    else if (word == "a" || word == "b" || word == "a" || word == "b" || word == "a," || word == "b," || word == "a," || word == "b,") {
+        newText += `<span style="${theme.registers}">${word} </span> `;
+    }
+
+    // numbers
+    else if (/^\d+$/.test(word)) {
+        newText += `<span style="${theme.number}">${word}</span> `;
+    }
+
+    // labels
+    else if (word[0] == ':') {
+        newText += `<span style="${theme.label}">${word}</span> `;
+    }
+
+    // other language elements
+    else {
+        newText += word + " ";
+    }
+
+    return [newText, comment];
 };
